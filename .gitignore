@@ -44,3 +44,5 @@ Manifest.toml
 .ipynb_checkpoints/
 *.ipynb
 *.csv
+
+notes/*
