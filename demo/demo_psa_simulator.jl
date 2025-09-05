@@ -29,7 +29,7 @@ parent_dir = dirname(@__DIR__)
 Pkg.activate(parent_dir)
 
 # Add required packages if not already installed
-required_packages = ["DataFrames", "PrettyTables", "Statistics"]
+required_packages = ["DataFrames", "PrettyTables", "Statistics", "CSV"]
 for pkg in required_packages
     if !(pkg in keys(Pkg.project().dependencies))
         println("Installing $pkg...")
@@ -41,6 +41,7 @@ using PSASimulator
 using DataFrames
 using PrettyTables
 using Statistics
+using CSV
 
 println("✓ All modules loaded successfully")
 
@@ -54,6 +55,39 @@ include("demo_data.jl")
 # ===================================================================
 # HELPER FUNCTIONS
 # ===================================================================
+
+function save_trajectory_data(traj, scenario_name, material_name, N)
+    if traj === nothing
+        return
+    end
+
+    base_dir = joinpath(@__DIR__, "simulation_data")
+    scenario_dir = joinpath(base_dir, replace(scenario_name, r"[/: ]" => "_"))
+    material_dir = joinpath(scenario_dir, replace(material_name, r"[/: ]" => "_"))
+    mkpath(material_dir)
+
+    headers = ["Time"]
+    append!(headers, ["P_Node$(i)" for i in 1:N+2])
+    append!(headers, ["y_Node$(i)" for i in 1:N+2])
+    append!(headers, ["x1_Node$(i)" for i in 1:N+2])
+    append!(headers, ["x2_Node$(i)" for i in 1:N+2])
+    append!(headers, ["T_Node$(i)" for i in 1:N+2])
+
+    steps = [
+        (:a, "Co-current_Pressurization"),
+        (:b, "Adsorption"),
+        (:c, "Heavy_Reflux"),
+        (:d, "Counter-current_Depressurization"),
+        (:e, "Light_Reflux")
+    ]
+
+    for (step_key, step_name) in steps
+        data = traj[step_key]
+        time = traj[Symbol("t$(Int(String(step_key)[1]) - 96)")]
+        df = DataFrame(hcat(time, data), headers)
+        CSV.write(joinpath(material_dir, "$(step_name).csv"), df)
+    end
+end
 
 """
     run_psa_simulation(opt_vars, material_data, run_type, N)
@@ -88,10 +122,10 @@ function run_psa_simulation(opt_vars, material_data, run_type, N=10)
             run_type=Symbol(run_type),
             it_disp=false)
 
-        return result.objectives, result.constraints
+        return result.objectives, result.constraints, result.traj
     catch e
         @warn "Simulation failed: $e"
-        return [NaN, NaN], [NaN, NaN, NaN]
+        return [NaN, NaN], [NaN, NaN, NaN], nothing
     end
 end
 
@@ -162,7 +196,10 @@ function run_scenario_tests(scenario_name, materials_list, opt_vars_matrix,
         opt_vars = opt_vars_matrix[i, :]
 
         # Run simulation
-        objectives, constraints = run_psa_simulation(opt_vars, material_data, run_type, N)
+        objectives, constraints, traj = run_psa_simulation(opt_vars, material_data, run_type, N)
+
+        # Save trajectory data
+        save_trajectory_data(traj, scenario_name, material_name, N)
 
         # Parse results
         res = parse_results(objectives, constraints, run_type)

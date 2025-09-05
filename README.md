@@ -29,41 +29,61 @@ Dependencies:
 - `DataFrames.jl` - Data manipulation
 - `PrettyTables.jl` - Formatted output display
 
+## Configuration
 
-## Basic Usage
-A high level interface `psacycle` is defined to run 5 steps modified Skarstrom Process easily.
+The simulation parameters are now managed through `config.yaml` in the project root. This file allows for easy adjustment of simulation settings without modifying the source code.
 
-```julia
-using PSASimulator
+A typical `config.yaml` structure includes:
 
-# Define process variables
-process_vars = [
-    L,      # Bed length [m]
-    P_0,    # Feed pressure [Pa]
-    n_dot,  # Feed molar flow rate [mol/s]
-    t_ads,  # Adsorption time [s]
-    alpha,  # Light reflux ratio [-]
-    beta,   # Heavy reflux ratio [-]
-    P_I,    # Intermediate pressure [Pa]
-    P_l     # Light product pressure [Pa]
-]
+```yaml
+simulation_settings:
+  material_name: "Zeolite_13X"
+  scenario_name: "Normal_Operation"
+  N: 10
+  max_iterations: 700
+  optimization_scenario: "MaxPurity90"
 
-# Material properties: (properties_vector, isotherm_parameters)
-material = (material_properties, isotherm_params)
+process_variables:
+  bed_length: 1.0
+  intermediate_pressure: 10000.0
 
-# Run simulation
-result = psacycle(process_vars, material;
-    N = 10,                           # Number of finite volumes
-    run_type = :ProcessEvaluation,    # or :EconomicEvaluation
-    it_disp = true                    # Display iteration progress
-)
+fault_injection:
+  enabled: false
+  type: None # e.g., Adsorbent_Degradation, Column_Leak, Stuck_Valve
+  parameters: {}
 ```
 
-The simulation returns a results object containing:
-- `objectives`: Performance metrics (purity, recovery, productivity, energy)
-- `constraints`: Constraint violations for optimization
-- `state_vars`: Final state of all variables
-- `performance`: Detailed performance metrics
+## Basic Usage (Updated)
+
+To run a simulation, configure your parameters in `config.yaml` and then execute `run.jl`:
+
+```julia
+julia run.jl
+```
+
+The script will automatically log the simulation progress and save all results in a structured output directory.
+
+## Data Organization
+
+Simulation results, including detailed cycle data and logs, are saved in the `simulation_output/` directory. The structure is as follows:
+
+```
+simulation_output/
+└── <MaterialName>/
+    └── <ScenarioName>/
+        └── <Timestamp>/
+            ├── simulation.log
+            ├── cycle_1/
+            │   ├── 1_Co-current_Pressurization.csv
+            │   ├── 2_Adsorption.csv
+            │   └── ...
+            ├── cycle_2/
+            │   ├── ...
+            └── cycle_N/  (The final, converged cycle or max_iterations)
+                ├── ...
+```
+
+Each `cycle_N` subdirectory contains CSV files for each step of that specific simulation cycle.
 
 ## Demo
 
@@ -113,7 +133,7 @@ The demo includes 16 different adsorbent materials:
 ```math
 \begin{aligned}
 \frac{\partial T}{\partial \tau} &= \frac{K_z}{v_0 L}\,\frac{1}{\zeta}\,\frac{\partial^2 T}{\partial z^2}\\
-&\quad - \frac{\varepsilon C_{pg} P_0}{R T_0}\,\frac{1}{\zeta}\left[\frac{\partial (P v)}{\partial z} - T\,\frac{\partial}{\partial z}\left(\frac{P v}{T}\right)\right]\\
+&\quad - \frac{\varepsilon C_{pg} P_0}{R T_0}\,\frac{1}{\zeta}\left[\frac{\partial (P v)}{\partial z} - T\,\frac{\partial}{\partial z}\left(\frac{P v}{T}\right)\right]\\\
 &\quad + \frac{(1-\varepsilon) q_{s0}}{T_0}\,\frac{1}{\zeta}\Bigl[(-\Delta U_1 + R T_0 T)\frac{\partial x_1}{\partial \tau} + (-\Delta U_2 + R T_0 T)\frac{\partial x_2}{\partial \tau}\Bigr]
 \end{aligned}
 ```
@@ -171,3 +191,15 @@ The PDEs are solved using:
 - **Temporal integration**: Adaptive ODE solvers from `DifferentialEquations.jl`
 
 The simulator iterates through cycles until the state variables at the beginning and end of a cycle converge, indicating cyclic steady state has been reached.
+
+## Modifications and Enhancements
+
+This repository, originally a Julia translation of the [MATLAB-based PSA simulator by PEESEgroup](https://github.com/PEESEgroup/PSA) (translated by xyin-anl), has undergone several enhancements to improve its usability and extend its capabilities. These modifications were developed with the assistance of a large language model (Gemini).
+
+Key enhancements include:
+
+*   **Configuration Management:** Introduced `config.yaml` for externalizing simulation parameters, allowing for flexible scenario definition without code changes.
+*   **Modular Data Handling:** Extracted all hardcoded simulation constants and optimization tables into a dedicated `config.jl` file, improving code cleanliness and maintainability.
+*   **Comprehensive Logging:** Implemented detailed logging for each simulation run, capturing configuration details and progress in `simulation.log` files.
+*   **Full Trajectory Data:** The simulator now saves data for every cycle, enabling analysis of transient behavior leading up to cyclic steady state.
+*   **Fault Injection Framework (In Progress):** Prepared the codebase for configurable fault injection mechanisms, allowing for systematic study of system anomalies.
