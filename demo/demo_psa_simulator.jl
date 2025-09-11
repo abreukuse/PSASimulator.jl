@@ -42,6 +42,7 @@ using DataFrames
 using PrettyTables
 using Statistics
 using CSV
+using Dates
 
 println("✓ All modules loaded successfully")
 
@@ -57,15 +58,20 @@ include("demo_data.jl")
 # ===================================================================
 
 function save_trajectory_data(traj, scenario_name, material_name, N)
-    if traj === nothing
+    # Check if trajectory data is valid and contains the expected history
+    if traj === nothing || !haskey(traj, :a_storage) || isempty(traj[:a_storage])
+        # Add a print statement to know why it's not saving
+        println(" - No valid trajectory history found to save.")
         return
     end
 
+    # Define the output directory structure
     base_dir = joinpath(@__DIR__, "simulation_data")
     scenario_dir = joinpath(base_dir, replace(scenario_name, r"[/: ]" => "_"))
-    material_dir = joinpath(scenario_dir, replace(material_name, r"[/: ]" => "_"))
+    material_dir = joinpath(scenario_dir, replace(material_name, r"/: " => "_"))
     mkpath(material_dir)
 
+    # Define headers for the CSV files
     headers = ["Time"]
     append!(headers, ["P_Node$(i)" for i in 1:N+2])
     append!(headers, ["y_Node$(i)" for i in 1:N+2])
@@ -73,20 +79,27 @@ function save_trajectory_data(traj, scenario_name, material_name, N)
     append!(headers, ["x2_Node$(i)" for i in 1:N+2])
     append!(headers, ["T_Node$(i)" for i in 1:N+2])
 
-    steps = [
-        (:a, "Co-current_Pressurization"),
-        (:b, "Adsorption"),
-        (:c, "Heavy_Reflux"),
-        (:d, "Counter-current_Depressurization"),
-        (:e, "Light_Reflux")
+    # Map the step names to the keys used in the traj object
+    step_map = [
+        (:a_storage, :t1_storage, "1_Co-current_Pressurization"),
+        (:b_storage, :t2_storage, "2_Adsorption"),
+        (:c_storage, :t3_storage, "3_Heavy_Reflux"),
+        (:d_storage, :t4_storage, "4_Counter-current_Depressurization"),
+        (:e_storage, :t5_storage, "5_Light_Reflux")
     ]
 
-    for (step_key, step_name) in steps
-        data = traj[step_key]
-        time = traj[Symbol("t$(Int(String(step_key)[1]) - 96)")]
+    # Iterate through the steps and save the FINAL cycle's data
+    for (data_key, time_key, step_name) in step_map
+        # Get the data from the last cycle
+        data = last(traj[data_key])
+        time = last(traj[time_key])
+        
         df = DataFrame(hcat(time, data), headers)
-        CSV.write(joinpath(material_dir, "$(step_name).csv"), df)
+        filename = "$(step_name).csv"
+        CSV.write(joinpath(material_dir, filename), df)
     end
+    # Add a confirmation message
+    println(" - Trajectory data for final cycle saved.")
 end
 
 """
@@ -164,7 +177,7 @@ end
 Run tests for a complete scenario.
 """
 function run_scenario_tests(scenario_name, materials_list, opt_vars_matrix,
-    isotherm_params, sim_params, run_type, N=10)
+    isotherm_params, sim_params, run_type, N, console_stream)
 
     results = DataFrame(
         Material=String[],
@@ -195,6 +208,11 @@ function run_scenario_tests(scenario_name, materials_list, opt_vars_matrix,
         # Get optimization variables
         opt_vars = opt_vars_matrix[i, :]
 
+        # Display progress to both console and log
+        progress_msg = "  $(lpad(i, 2))/$(n_test). $(rpad(material_name, 20))"
+        print(console_stream, progress_msg)
+        print(progress_msg)
+
         # Run simulation
         objectives, constraints, traj = run_psa_simulation(opt_vars, material_data, run_type, N)
 
@@ -216,14 +234,17 @@ function run_scenario_tests(scenario_name, materials_list, opt_vars_matrix,
             res.constraints[3]
         ))
 
-        # Display progress
-        print("  $(lpad(i, 2)). $(rpad(material_name, 20))")
+        # Display result to both console and log
         if run_type == "ProcessEvaluation"
-            println("Purity: $(round(res.purity, digits=4)), " *
-                    "Recovery: $(round(res.recovery, digits=4))")
+            result_msg = "Purity: $(round(res.purity, digits=4)), " *
+                         "Recovery: $(round(res.recovery, digits=4))"
+            println(console_stream, result_msg)
+            println(result_msg)
         else
-            println("Productivity: $(round(res.productivity, digits=4)), " *
-                    "Energy: $(round(res.energy, digits=2))")
+            result_msg = "Productivity: $(round(res.productivity, digits=4)), " *
+                         "Energy: $(round(res.energy, digits=2))"
+            println(console_stream, result_msg)
+            println(result_msg)
         end
     end
 
@@ -261,60 +282,99 @@ end
 # ===================================================================
 
 function main()
-    # Configuration
-    N = 10  # Number of discretization points
+    # --- Create Timestamped Log File ---
+    timestamp = Dates.format(now(), "yyyy-mm-dd_HH-MM-SS")
+    log_file_path = joinpath(@__DIR__, "demo_run_$(timestamp).log")
+    println("🚀 RUNNING DEMO. Log will be saved to: $(log_file_path)")
 
-    # Define test scenarios
-    scenarios = [
-        (name="90% Recovery (Max Purity)",
-            materials=PURITY_RECOVERY_MATERIALS,
-            opt_vars=OPT_VARS_PURITY,
-            run_type="ProcessEvaluation"), (name="95% Recovery (Max Purity)",
-            materials=PURITY_RECOVERY_MATERIALS,
-            opt_vars=OPT_VARS_RECOVERY,
-            run_type="ProcessEvaluation"), (name="Economic (Max Productivity)",
-            materials=ECONOMIC_MATERIALS,
-            opt_vars=OPT_VARS_PRODUCTIVITY,
-            run_type="EconomicEvaluation"), (name="Economic (Min Energy)",
-            materials=ECONOMIC_MATERIALS,
-            opt_vars=OPT_VARS_ENERGY,
-            run_type="EconomicEvaluation")
+    # --- Handle Command-Line Argument for Scenario Selection ---
+    all_scenarios = [
+        (name="90% Recovery (Max Purity)", materials=PURITY_RECOVERY_MATERIALS, opt_vars=OPT_VARS_PURITY, run_type="ProcessEvaluation"),
+        (name="95% Recovery (Max Purity)", materials=PURITY_RECOVERY_MATERIALS, opt_vars=OPT_VARS_RECOVERY, run_type="ProcessEvaluation"),
+        (name="Economic (Max Productivity)", materials=ECONOMIC_MATERIALS, opt_vars=OPT_VARS_PRODUCTIVITY, run_type="EconomicEvaluation"),
+        (name="Economic (Min Energy)", materials=ECONOMIC_MATERIALS, opt_vars=OPT_VARS_ENERGY, run_type="EconomicEvaluation")
     ]
 
-    # Store all results
-    all_results = DataFrame()
-
-    println("\n🚀 RUNNING ALL TEST SCENARIOS")
-    println("="^60)
-
-    # Run each scenario
-    for (i, scenario) in enumerate(scenarios)
-        println("\n\n[$i/$(length(scenarios))] $(scenario.name)")
-        println("="^60)
-
-        results = run_scenario_tests(
-            scenario.name,
-            scenario.materials,
-            scenario.opt_vars,
-            ISOTHERM_PARAMETERS,
-            SIMULATION_PARAMETERS,
-            scenario.run_type,
-            N
-        )
-
-        # Add scenario column and append to all results
-        results[!, :Scenario] .= scenario.name
-        append!(all_results, results)
-
-        # Display scenario summary
-        display_scenario_summary(scenario.name, results, scenario.run_type)
+    scenario_to_run = 0 # Default to 0 (run all)
+    if !isempty(ARGS)
+        try
+            choice = parse(Int, ARGS[1])
+            if 1 <= choice <= length(all_scenarios)
+                scenario_to_run = choice
+                println("--> Running ONLY specified scenario: #$choice")
+            else
+                println("--> WARNING: Invalid scenario number '$(ARGS[1])'. Must be between 1 and 4. Running all scenarios.")
+            end
+        catch e
+            println("--> WARNING: Could not parse '$(ARGS[1])' as a number. Running all scenarios.")
+        end
+    else
+        println("--> No scenario specified. Running all 4 scenarios.")
     end
 
-    # Display overall summary
-    display_overall_summary(all_results)
 
-    return all_results
+    open(log_file_path, "w") do log_file_stream
+        original_stdout = stdout
+        redirect_stdout(log_file_stream)
+        try
+            println("="^60)
+            println(" PSA SIMULATOR DEMO LOG")
+            println("="^60)
+            println("Timestamp: $(timestamp)")
+
+            # Configuration
+            N = 10  # Number of discretization points
+
+            # Store all results
+            all_results = DataFrame()
+
+            # Run each scenario
+            for (i, scenario) in enumerate(all_scenarios)
+                if scenario_to_run != 0 && i != scenario_to_run
+                    continue
+                end
+
+                scenario_header = "\n\n[$i/$(length(all_scenarios))] $(scenario.name)"
+                println(original_stdout, scenario_header) # Print to console
+                println(scenario_header) # Print to log
+
+                println("="^60) # Print to log
+
+                results = run_scenario_tests(
+                    scenario.name,
+                    scenario.materials,
+                    scenario.opt_vars,
+                    ISOTHERM_PARAMETERS,
+                    SIMULATION_PARAMETERS,
+                    scenario.run_type,
+                    N,
+                    original_stdout # Pass console stream
+                )
+
+                # Add scenario column and append to all results
+                results[!, :Scenario] .= scenario.name
+                append!(all_results, results)
+
+                # Display scenario summary (will be logged)
+                display_scenario_summary(scenario.name, results, scenario.run_type)
+            end
+
+            # Display overall summary (will be logged)
+            display_overall_summary(all_results)
+
+        catch e
+            redirect_stdout(original_stdout)
+            println(stderr, "An error occurred during the demo: ", e)
+            showerror(stderr, e, catch_backtrace())
+        finally
+            redirect_stdout(original_stdout)
+        end
+    end
+    println("✓ Demo log saved to: $(log_file_path)")
 end
+
+
+
 
 """
     display_overall_summary(all_results)
@@ -435,5 +495,5 @@ end
 
 # Run the demo
 if abspath(PROGRAM_FILE) == @__FILE__
-    results = main()
+    main()
 end
