@@ -90,11 +90,25 @@ Each `cycle_N` subdirectory contains CSV files for each step of that specific si
 
 A comprehensive demo is provided in the `demo/` directory that validates the simulator against literature data from [Yancy-Caballero et al. (2020)](https://pubs.rsc.org/en/content/articlelanding/2020/me/d0me00060d).
 
-To run the demo:
-
+To run the demo, navigate to the `demo` directory:
 ```bash
 cd demo
+```
+
+**Running All Scenarios**
+
+To run all four validation scenarios, execute the script without arguments:
+```bash
 julia demo_psa_simulator.jl
+```
+
+**Running a Specific Scenario**
+
+You can also run a single scenario by providing its number (1-4) as a command-line argument.
+
+For example, to run only the third scenario (Economic - Max Productivity):
+```bash
+julia demo_psa_simulator.jl 3
 ```
 
 Note: The demo script automatically activates the parent project to ensure all dependencies are available.
@@ -195,7 +209,7 @@ The simulator iterates through cycles until the state variables at the beginning
 
 ## Modifications and Enhancements
 
-This repository, originally a Julia translation of the [MATLAB-based PSA simulator by PEESEgroup](https://github.com/PEESEgroup/PSA) (translated by xyin-anl), has undergone several enhancements to improve its usability and extend its capabilities. These modifications were developed with the assistance of a large language model (Gemini).
+This repository, originally a Julia translation of the [MATLAB-based PSA simulator by PEESEgroup](https://github.com/PEESEgroup/PSA) (translated by [xyin-anl](https://github.com/xyin-anl/PSASimulator.jl)), has undergone several enhancements to improve its usability and extend its capabilities. These modifications were developed with the assistance of a large language model (Gemini).
 
 Key enhancements include:
 
