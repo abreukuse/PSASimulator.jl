@@ -150,16 +150,18 @@ Parse simulation results based on the run type.
 # Returns
 Named tuple with purity, recovery, productivity, and energy values
 """
-function parse_results(objectives, constraints, run_type)
+function parse_results(objectives, constraints, traj, run_type)
     if run_type == "ProcessEvaluation"
+        # For process evaluation, we report the direct physical purity and recovery from the traj object
         return (
-            purity=-objectives[1],
-            recovery=-objectives[2],
+            purity=traj[:purity],
+            recovery=traj[:recovery],
             productivity=NaN,
             energy=NaN,
             constraints=constraints
         )
     else  # EconomicEvaluation
+        # For economic evaluation, the objectives are already productivity and energy
         return (
             purity=NaN,
             recovery=NaN,
@@ -220,7 +222,7 @@ function run_scenario_tests(scenario_name, materials_list, opt_vars_matrix,
         save_trajectory_data(traj, scenario_name, material_name, N)
 
         # Parse results
-        res = parse_results(objectives, constraints, run_type)
+        res = parse_results(objectives, constraints, traj, run_type)
 
         # Add to results
         push!(results, (
