@@ -161,17 +161,17 @@ B_i = b_i\,e^{-\Delta U_{b,i}/(R T)}, \qquad D_i = d_i\,e^{-\Delta U_{d,i}/(R T)
 ```
 
 ### Dimensionless Variables
-- Pressure: \(P = P_{\text{actual}}/P_0\)
-- Temperature: \(T = T_{\text{actual}}/T_0\)
-- Velocity: \(v = v_{\text{actual}}/v_0\)
-- Adsorbed amount: \(x_i = q_i/q_{s0}\)
-- Spatial coordinate: \(z = z_{\text{actual}}/L\)
-- Time: \(\tau = t v_0 / L\)
+- Pressure: $P = P_{\text{actual}}/P_0$
+- Temperature: $T = T_{\text{actual}}/T_0$
+- Velocity: $v = v_{\text{actual}}/v_0$
+- Adsorbed amount: $x_i = q_i/q_{s0}$
+- Spatial coordinate: $z = z_{\text{actual}}/L$
+- Time: $\tau = t v_0 / L$
 
 ### Key Parameters
-- \(\mathrm{Pe} = v_0 L / D_l\) with \(D_l = 0.7 D_m + v_0 r_p\) (axial dispersion)
-- \(\phi = R T_0 q_{s0} (1-\varepsilon) / (\varepsilon P_0)\) (capacity ratio)
-- \(k_i = k_{i,\text{LDF}} L / v_0\) (dimensionless LDF coefficient)
+- $\mathrm{Pe} = v_0 L / D_l$ with $D_l = 0.7 D_m + v_0 r_p$ (axial dispersion)
+- $\phi = R T_0 q_{s0} (1-\varepsilon) / (\varepsilon P_0)$ (capacity ratio)
+- $k_i = k_{i,\text{LDF}} L / v_0$ (dimensionless LDF coefficient)
 
 ### Process Steps
 
