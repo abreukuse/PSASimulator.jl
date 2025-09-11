@@ -809,13 +809,13 @@ function vacuum_energy(time::AbstractVector, state_vars::AbstractMatrix, Patm::R
         P = state_vars[:, 1:2] .* P_0
         y = state_vars[:, N+3]
         T = state_vars[:, 4*N+9] .* T_0
-        ro_g = (y .* MW_CO2 .+ (1 .- y) .* MW_N2) * P[:, 1] ./ R ./ T
+        ro_g = (y .* MW_CO2 .+ (1 .- y) .* MW_N2) .* P[:, 1] ./ R ./ T
         P_out = P[:, 1]
     elseif ProductEnd == "LPEnd"
         P = state_vars[:, N+1:N+2] .* P_0
         y = state_vars[:, 2*N+4]
         T = state_vars[:, 5*N+10] .* T_0
-        ro_g = (y .* MW_CO2 .+ (1 .- y) .* MW_N2) * P[:, 2] ./ R ./ T
+        ro_g = (y .* MW_CO2 .+ (1 .- y) .* MW_N2) .* P[:, 2] ./ R ./ T
         P_out = P[:, 2]
     else
         error("CorrectionEnd must be 'HPEnd' or 'LPEnd'")
