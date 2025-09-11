@@ -4,6 +4,7 @@
 
 `PSASimulator.jl` is a Julia-based Pressure Swing Adsorption (PSA) simulation package for modeling gas separation processes, particularly CO₂ capture. This package is a Julia translation of the [original MATLAB-based simulator](https://github.com/PEESEgroup/PSA) at this moment, with additional features and improvements planned in the future.
 
+If you find this package helpful, please cite: [Yin, Xiangyu, and Chrysanthos E. Gounaris. "Computational discovery of Metal–Organic Frameworks for sustainable energy systems: Open challenges." Computers & Chemical Engineering 167 (2022): 108022.](https://www.sciencedirect.com/science/article/pii/S0098135422003568)
 
 ## Installation
 
