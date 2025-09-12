@@ -473,7 +473,7 @@ function psacycle(vars::Vector{<:Real}, material::Tuple;
         :purity => purity, :recovery => recovery, :mass_balance => MB
     )
 
-    return (objectives=objectives, constraints=constraints, traj=traj)
+    return (objectives=objectives, constraints=constraints, traj=traj, Params=Params)
 end
 
 # =============================================================================

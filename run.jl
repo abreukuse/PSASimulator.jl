@@ -222,7 +222,59 @@ function execute_simulation()
             println("🚀 Running simulation... (This may take a moment)")
             result = PSASimulator.psacycle(process_vars, material_data; N=N, run_type=Symbol(run_type), it_disp=true, max_iters=max_iterations)
 
-            # --- 4. SAVE THE RESULTS ---
+            # --- 4. LOG PARAMETERS ---
+            if isdefined(result, :Params)
+                println("\n" * "="^60)
+                println(" LOGGING DIFFERENTIAL EQUATION PARAMETERS")
+                println("="^60)
+
+                Params = result.Params
+                param_labels = [
+                    "N", "ΔU₁", "ΔU₂", "ρ_s", "T₀", "ε", "r_p", "μ", "R", "v₀",
+                    "q_s0", "C_pg", "C_pa", "C_ps", "D_m", "K_z", "P₀", "L", "MW_CO2", "MW_N2",
+                    "k_CO2_LDF", "k_N2_LDF", "y₀", "τ", "P_l", "P_inlet", "y_LP", "T_LP", "ṅ_LP",
+                    "α", "β", "P_I", "y_HR", "T_HR", "ṅ₀ * β", "y_LR_guess", "T_LR_guess", "ṅ₀", "feed_gas_type"
+                ]
+
+                println("\n--- DIFFERENTIAL EQUATION PARAMETERS (`Params` Vector) ---")
+                for i in 1:length(Params)
+                    println("  [$(i)] $(param_labels[i]): $(Params[i])")
+                end
+
+                # Calculate and log the final dimensionless parameters
+                v0 = Params[10]
+                L = Params[18]
+                Dm = Params[15]
+                rp = Params[7]
+                R = Params[9]
+                T0 = Params[5]
+                q_s0 = Params[11]
+                epsilon = Params[6]
+                P0 = Params[17]
+                k_CO2_LDF = Params[21]
+                k_N2_LDF = Params[22]
+
+                # Avoid division by zero if v0 is zero
+                if v0 > 0
+                    Pe = v0 * L / (0.7 * Dm + v0 * rp)
+                    phi = R * T0 * q_s0 * (1 - epsilon) / (epsilon * P0)
+                    k1 = k_CO2_LDF * L / v0
+                    k2 = k_N2_LDF * L / v0
+
+                    println("\n--- KEY DIMENSIONLESS PARAMETERS ---")
+                    println("  Péclet Number (Pe): $(Pe)")
+                    println("  Capacity Ratio (phi): $(phi)")
+                    println("  Dim. LDF Coeff (k1 - CO2): $(k1)")
+                    println("  Dim. LDF Coeff (k2 - N2): $(k2)")
+                else
+                    println("\n--- KEY DIMENSIONLESS PARAMETERS ---")
+                    println("  v₀ is zero, dimensionless parameters cannot be calculated.")
+                end
+                println("\n" * "="^60)
+            end
+
+
+            # --- 5. SAVE THE RESULTS ---
             if result.traj !== nothing
                 redirect_stdout(original_stdout) # Switch back to console for user messages
                 println("\n💾 Simulation finished. Saving data...")
