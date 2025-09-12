@@ -5,11 +5,11 @@
 simulation_settings:
     # Name of the material to be used in the simulation.
     # This name must correspond to an entry in the run.jl script.
-    material_name: "Zeolite_13X"
+    material_name: "Cu-TDPAT"
 
     # The name of the scenario, which determines the output folder name.
     # For fault simulations, this could be e.g., "Adsorbent_Degradation_20_percent"
-    scenario_name: "Normal_Operation"
+    scenario_name: "Custom_Test_Cu-TDPAT"
 
     # The number of finite volumes to use for discretizing the column.
     N: 10
@@ -18,9 +18,28 @@ simulation_settings:
     # 700 is the value used in the original MATLAB simulator.
     max_iterations: 100
 
+# Process variables that define the physical operation of the PSA unit.
+# These are used by the simulator to set up the process conditions.
+process_variables:
+    bed_length: 1.0 # L [m] - bed length
+    intermediate_pressure: 10000.0 # P_I [Pa] - intermediate pressure
+    # The optimization scenario key, used to look up optimal process variables.
+    # e.g., "MaxPurity90", "MaxPurity95", "MaxProductivity", "MinEnergy"
+    optimization_scenario: "MaxPurity90" # This will be ignored if custom_process_variables is enabled
+
 # Configuration for fault injection.
 # We will build on this in the next steps.
 fault_injection:
     enabled: false
     type: None # e.g., Adsorbent_Degradation, Column_Leak, Stuck_Valve
     parameters: {}
+
+# Optional: Custom process variables to override optimization lookup.
+# If enabled, these values will be used instead of looking up from tables.
+custom_process_variables:
+    enabled: true
+    P_0: 150000.0 # Feed pressure [Pa]
+    t_ads: 500.0 # Adsorption time [s]
+    alpha: 0.15 # Light reflux ratio [-]
+    beta: 0.25 # Heavy reflux ratio [-]
+    P_l: 10000.0 # Light product pressure [Pa]
