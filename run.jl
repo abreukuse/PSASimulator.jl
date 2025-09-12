@@ -135,6 +135,32 @@ function execute_simulation()
     max_iterations = sim_settings["max_iterations"]
     run_type = "ProcessEvaluation" # This could also be in the config
 
+    # --- LOAD FAULT SCENARIO ---
+    fault_scenario_name = get(sim_settings, "fault_scenario", "None")
+    overrides = Dict()
+    if fault_scenario_name != "None" && fault_scenario_name != ""
+        println("\n--- LOADING FAULT SCENARIO: $(fault_scenario_name) ---")
+        fault_scenarios_file = "fault_scenarios.yaml"
+        if isfile(fault_scenarios_file)
+            all_faults = YAML.load_file(fault_scenarios_file)
+            if haskey(all_faults, fault_scenario_name)
+                fault_data = all_faults[fault_scenario_name]
+                # The overrides are the fault data itself, minus the description.
+                overrides = filter(p -> p.first != "description", fault_data)
+                if !isempty(overrides)
+                    println("  ✓ Applied parameter overrides for fault scenario.")
+                else
+                    println("  - No applicable parameter overrides found for this fault.")
+                end
+            else
+                println("  ⚠️  WARNING: Fault scenario '$(fault_scenario_name)' not found in '$(fault_scenarios_file)'.")
+            end
+        else
+            println("  ⚠️  WARNING: '$(fault_scenarios_file)' not found. Cannot apply fault.")
+        end
+    end
+
+
     # --- Create Timestamped Directory ---
     timestamp = Dates.format(now(), "yyyy-mm-dd_HH-MM-SS")
     base_dir = "simulation_output"
@@ -166,7 +192,16 @@ function execute_simulation()
                     println("  $(key): $(value)")
                 end
             end
-            println("\n--- FAULT INJECTION ---")
+
+            # Log the applied fault overrides
+            if !isempty(overrides)
+                println("\n--- APPLIED FAULT PARAMETER OVERRIDES ---")
+                for (key, value) in overrides
+                    println("  $(key): $(value)")
+                end
+            end
+
+            println("\n--- LEGACY FAULT INJECTION (from config.yaml) ---")
             for (key, value) in fault_settings
                 println("  $(key): $(value)")
             end
@@ -220,7 +255,7 @@ function execute_simulation()
 
             # --- 3. RUN THE SIMULATION ---
             println("🚀 Running simulation... (This may take a moment)")
-            result = PSASimulator.psacycle(process_vars, material_data; N=N, run_type=Symbol(run_type), it_disp=true, max_iters=max_iterations)
+            result = PSASimulator.psacycle(process_vars, material_data; N=N, run_type=Symbol(run_type), it_disp=true, max_iters=max_iterations, overrides=overrides)
 
             # --- 4. LOG PARAMETERS ---
             if isdefined(result, :Params)

@@ -11,6 +11,10 @@ simulation_settings:
     # For fault simulations, this could be e.g., "Adsorbent_Degradation_20_percent"
     scenario_name: "Custom_Test_Cu-TDPAT"
 
+    # NEW: Select the fault to run. Set to "None" for normal operation.
+    # Options: "None", or a key from fault_scenarios.yaml
+    fault_scenario: "None"
+
     # The number of finite volumes to use for discretizing the column.
     N: 10
 

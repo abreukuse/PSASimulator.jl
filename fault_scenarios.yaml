@@ -1,0 +1,16 @@
+# This file is a library of fault scenarios defined by parameter overrides.
+# The simulator will load the selected scenario and apply these values
+# on top of the default parameters for a given run.
+
+Pore_Blocking_Moderate:
+  description: "Moderate pore mouth blocking, slowing CO2 mass transfer by 40%."
+  k_CO2_LDF: 0.0978 # Original is 0.1631
+
+Bed_Compaction_Minor:
+  description: "Minor bed compaction, reducing void space and particle size."
+  epsilon: 0.35   # Original is 0.37
+  r_p: 0.0009   # Original is 0.001
+
+Feed_Composition_Drift:
+  description: "CO2 mole fraction in feed gas has drifted down from 15% to 12%."
+  y0: 0.12 # Original is 0.15

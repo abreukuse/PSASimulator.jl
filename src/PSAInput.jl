@@ -30,7 +30,8 @@ All numeric results are `Float64`, matching MATLAB's default.
 function process_input_parameters(process_vars::AbstractVector,
       material::Tuple,
       N::Integer;
-      feed_gas::AbstractString="Constant Velocity")
+      feed_gas::AbstractString="Constant Velocity",
+      overrides::Dict=Dict())
 
       @assert length(process_vars) == 8 "process_vars must have length 8"
       L, P₀, ṅ₀, t_ads, α, β, P_I, P_l = Float64.(process_vars)
@@ -40,28 +41,28 @@ function process_input_parameters(process_vars::AbstractVector,
       @assert length(isoPar) ≥ 13 "isotherm_par needs at least 13 elements (matches MATLAB)"
 
       # ─────────────────────────────────────────────────────────────────────
-      #  Constants (identical to MATLAB)
+      #  Constants (with override mechanism)
       # ─────────────────────────────────────────────────────────────────────
       R = 8.314             # J mol⁻¹ K⁻¹
-      T₀ = 313.15            # K
-      y₀ = 0.15
+      T₀ = get(overrides, "T0", 313.15)            # K
+      y₀ = get(overrides, "y0", 0.15)
       Ctot₀ = P₀ / R / T₀
       v₀ = ṅ₀ / Ctot₀
-      μ = 1.72e-5           # Pa·s
-      ε = 0.37
-      D_m = 1.2995e-5         # m²/s
-      K_z = 0.09              # W m⁻¹ K⁻¹
-      C_pg = 30.7              # J mol⁻¹ K⁻¹
-      C_pa = 30.7
+      μ = get(overrides, "mu", 1.72e-5)           # Pa·s
+      ε = get(overrides, "epsilon", 0.37)
+      D_m = get(overrides, "D_m", 1.2995e-5)         # m²/s
+      K_z = get(overrides, "K_z", 0.09)              # W m⁻¹ K⁻¹
+      C_pg = get(overrides, "C_pg", 30.7)              # J mol⁻¹ K⁻¹
+      C_pa = get(overrides, "C_pa", 30.7)
       MW_CO2 = 0.04402           # kg mol⁻¹
       MW_N2 = 0.02802
-      r_p = 1e-3              # m
-      C_ps = 1070.0            # J kg⁻¹ K⁻¹
-      q_s = 5.84              # mol kg⁻¹
+      r_p = get(overrides, "r_p", 1e-3)              # m
+      C_ps = get(overrides, "C_ps", 1070.0)            # J kg⁻¹ K⁻¹
+      q_s = get(overrides, "q_s", 5.84)              # mol kg⁻¹
       ρ_s = material_property[1]
       q_s0 = q_s * ρ_s
-      k_CO2_LDF = 0.1631
-      k_N2_LDF = 0.2044
+      k_CO2_LDF = get(overrides, "k_CO2_LDF", 0.1631)
+      k_N2_LDF = get(overrides, "k_N2_LDF", 0.2044)
       ΔU = (material_property[2], material_property[3])
 
       # Operating‑step default durations (s)

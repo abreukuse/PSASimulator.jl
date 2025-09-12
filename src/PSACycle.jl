@@ -55,14 +55,15 @@ function psacycle(vars::Vector{<:Real}, material::Tuple;
     N::Int=10,
     it_disp::Bool=false,
     run_type::Symbol=:ProcessEvaluation,
-    max_iters::Int=700)
+    max_iters::Int=700,
+    overrides::Dict=Dict())
 
     # Initialize objectives and constraints
     objectives = [0.0, 0.0]
     constraints = [0.0, 0.0, 0.0]
 
     # Process input parameters (matching MATLAB exactly)
-    ip = process_input_parameters(vars, material, N)
+    ip = process_input_parameters(vars, material, N; overrides=overrides)
     Params = ip.Params
     IsothermParams = ip.IsothermParams
     Times = ip.Times
