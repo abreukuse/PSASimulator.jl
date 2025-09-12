@@ -15,6 +15,21 @@ export ISOTHERM_PARAMETERS, SIMULATION_PARAMETERS, MATERIALS_LIST,
 # ===================================================================
 
 # Isotherm parameters from Params.mat
+# Column definitions for ISOTHERM_PARAMETERS:
+# [1] q_s_b_1 (CO2, site b)
+# [2] q_s_b_2 (N2, site b)
+# [3] q_s_d_1 (CO2, site d)
+# [4] q_s_d_2 (N2, site d)
+# [5] b_1 (CO2, affinity b)
+# [6] b_2 (N2, affinity b)
+# [7] d_1 (CO2, affinity d)
+# [8] d_2 (N2, affinity d)
+# [9] deltaU_b_1 (CO2, heat b)
+# [10] deltaU_b_2 (N2, heat b)
+# [11] deltaU_d_1 (CO2, heat d)
+# [12] deltaU_d_2 (N2, heat d)
+# [13] Input Type Flag 
+# (0=Partial Pressure, 1=Concentration)
 const ISOTHERM_PARAMETERS = [
     7.022572e+00 6.326170e+00 2.647463e-12 2.269914e-11 -3.375370e+04 -3.641874e+04 7.022572e+00 0.000000e+00 8.228112e-09 0.000000e+00 -1.200000e+04 0.000000e+00 0.000000e+00;
     9.999929e+00 8.838786e+00 7.416992e-11 1.296440e-10 -2.493171e+04 -2.493171e+04 1.000000e+01 0.000000e+00 2.368616e-08 0.000000e+00 -5.800000e+03 0.000000e+00 0.000000e+00;
@@ -35,6 +50,10 @@ const ISOTHERM_PARAMETERS = [
 ]
 
 # Simulation parameters from Params.mat
+# Column definitions for SIMULATION_PARAMETERS:
+# [1] ρ_s (Solid density of adsorbent)
+# [2] ΔU_1 (Heat of adsorption for CO2)
+# [3] ΔU_2 (Heat of adsorption for N2)
 const SIMULATION_PARAMETERS = [
     1.169000e+03 -3.450000e+04 -1.200000e+04;
     7.890000e+02 -2.490000e+04 -5.800000e+03;
