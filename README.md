@@ -40,18 +40,15 @@ A typical `config.yaml` structure includes:
 simulation_settings:
   material_name: "Zeolite_13X"
   scenario_name: "Normal_Operation"
+  # Select a fault from fault_scenarios.yaml, or "None" for a normal run
+  fault_scenario: "None"
   N: 10
   max_iterations: 700
-  optimization_scenario: "MaxPurity90"
 
 process_variables:
   bed_length: 1.0
   intermediate_pressure: 10000.0
-
-fault_injection:
-  enabled: false
-  type: None # e.g., Adsorbent_Degradation, Column_Leak, Stuck_Valve
-  parameters: {}
+  optimization_scenario: "MaxPurity90"
 ```
 
 ## Basic Usage (Updated)
@@ -63,6 +60,45 @@ julia run.jl
 ```
 
 The script will automatically log the simulation progress and save all results in a structured output directory.
+
+## Fault Injection
+
+The simulator includes a configurable system for studying the impact of process faults and anomalies. This is achieved by overriding the system's fundamental physical or operational parameters to simulate conditions like material degradation, bed channeling, or composition drifts.
+
+This allows for the systematic generation of "ground truth" data for normal vs. faulty operations, which is ideal for developing and testing fault detection and diagnosis models.
+
+### 1. Defining Faults in `fault_scenarios.yaml`
+
+A library of fault scenarios can be defined in the `fault_scenarios.yaml` file. Each entry represents a specific fault and contains the parameter values that should be overridden for that scenario.
+
+**Example `fault_scenarios.yaml`:**
+```yaml
+# A library of fault scenarios defined by parameter overrides.
+
+Pore_Blocking_Moderate:
+  description: "Moderate pore mouth blocking, slowing CO2 mass transfer by 40%."
+  k_CO2_LDF: 0.0978 # Original is 0.1631
+
+Bed_Compaction_Minor:
+  description: "Minor bed compaction, reducing void space and particle size."
+  epsilon: 0.35   # Original is 0.37
+  r_p: 0.0009   # Original is 0.001
+```
+
+### 2. Activating a Fault Scenario
+
+To run a simulation with a fault, specify the desired scenario in `config.yaml` under the `simulation_settings` section.
+
+```yaml
+simulation_settings:
+  material_name: "Zeolite_13X"
+  scenario_name: "Test_Pore_Blocking"
+  # Select the fault to run. Set to "None" for normal operation.
+  fault_scenario: "Pore_Blocking_Moderate"
+  N: 10
+  max_iterations: 700
+```
+Set `fault_scenario` to `"None"` to run a standard, non-faulty simulation. The applied overrides will be documented in the `simulation.log` file for each run.
 
 ## Data Organization
 
@@ -148,7 +184,7 @@ The demo includes 16 different adsorbent materials:
 ```math
 \begin{aligned}
 \frac{\partial T}{\partial \tau} &= \frac{K_z}{v_0 L}\,\frac{1}{\zeta}\,\frac{\partial^2 T}{\partial z^2}\\
-&\quad - \frac{\varepsilon C_{pg} P_0}{R T_0}\,\frac{1}{\zeta}\left[\frac{\partial (P v)}{\partial z} - T\,\frac{\partial}{\partial z}\left(\frac{P v}{T}\right)\right]\\\
+&\quad - \frac{\varepsilon C_{pg} P_0}{R T_0}\,\frac{1}{\zeta}\left[\frac{\partial (P v)}{\partial z} - T\,\frac{\partial}{\partial z}\left(\frac{P v}{T}\right)\right]\\
 &\quad + \frac{(1-\varepsilon) q_{s0}}{T_0}\,\frac{1}{\zeta}\Bigl[(-\Delta U_1 + R T_0 T)\frac{\partial x_1}{\partial \tau} + (-\Delta U_2 + R T_0 T)\frac{\partial x_2}{\partial \tau}\Bigr]
 \end{aligned}
 ```
@@ -215,6 +251,6 @@ Key enhancements include:
 
 *   **Configuration Management:** Introduced `config.yaml` for externalizing simulation parameters, allowing for flexible scenario definition without code changes.
 *   **Modular Data Handling:** Extracted all hardcoded simulation constants and optimization tables into a dedicated `config.jl` file, improving code cleanliness and maintainability.
-*   **Comprehensive Logging:** Implemented detailed logging for each simulation run, capturing configuration details and progress in `simulation.log` files.
+*   **Comprehensive Logging:** Implemented detailed logging for each simulation run, capturing configuration details, applied fault parameters, and the final equation parameters used by the solver in `simulation.log` files.
 *   **Full Trajectory Data:** The simulator now saves data for every cycle, enabling analysis of transient behavior leading up to cyclic steady state.
-*   **Fault Injection Framework (In Progress):** Prepared the codebase for configurable fault injection mechanisms, allowing for systematic study of system anomalies.
+*   **Configurable Fault Injection:** Implemented a parameter-based fault injection system. Users can define fault scenarios (e.g., adsorbent degradation, bed channeling) in an external `fault_scenarios.yaml` file and activate them in the main configuration, enabling systematic study of system anomalies.
