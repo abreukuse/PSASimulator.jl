@@ -126,13 +126,13 @@ function execute_simulation()
     sim_settings = config["simulation_settings"]
     proc_vars_config = config["process_variables"]
     fault_settings = config["fault_injection"]
+    custom_proc_vars = get(config, "custom_process_variables", nothing)
 
     # Extract parameters from config
     N = sim_settings["N"]
     material_name = sim_settings["material_name"]
     scenario_name = sim_settings["scenario_name"]
     max_iterations = sim_settings["max_iterations"]
-    optimization_scenario = sim_settings["optimization_scenario"]
     run_type = "ProcessEvaluation" # This could also be in the config
 
     # --- Create Timestamped Directory ---
@@ -156,9 +156,15 @@ function execute_simulation()
             for (key, value) in sim_settings
                 println("  $(key): $(value)")
             end
-            println("\n--- PROCESS VARIABLES ---")
+            println("\n--- PROCESS VARIABLES (from config.yaml) ---")
             for (key, value) in proc_vars_config
                 println("  $(key): $(value)")
+            end
+            if custom_proc_vars !== nothing
+                println("\n--- CUSTOM PROCESS VARIABLES (from config.yaml) ---")
+                for (key, value) in custom_proc_vars
+                    println("  $(key): $(value)")
+                end
             end
             println("\n--- FAULT INJECTION ---")
             for (key, value) in fault_settings
@@ -166,22 +172,51 @@ function execute_simulation()
             end
             println("\n" * "="^60 * "\n")
 
+            # --- 2. DETERMINE PROCESS VARIABLES TO USE ---
+            local process_vars # Declare local to avoid scope issues
+            local material_data # NEW: Declare material_data here to ensure it's always defined
 
-            # --- 2. GET MATERIAL AND PROCESS VARIABLES ---
+            # Always get material_data, as it's needed by psacycle regardless of process_vars source
             material_properties, isotherm_params = get_material_data(material_name)
             material_data = (material_properties, isotherm_params)
-            opt_vars = get_opt_vars(material_name, optimization_scenario)
 
-            process_vars = [
-                proc_vars_config["bed_length"],            # L [m]
-                opt_vars[1],                                # P_0 [Pa]
-                opt_vars[1] * opt_vars[4] / 8.314 / 313.15, # n_dot_0 [mol/s]
-                opt_vars[2],                                # t_ads [s]
-                opt_vars[3],                                # alpha [-]
-                opt_vars[5],                                # beta [-]
-                proc_vars_config["intermediate_pressure"],# P_I [Pa]
-                opt_vars[6]                                 # P_l [Pa]
-            ]
+            if custom_proc_vars !== nothing &&
+               get(custom_proc_vars, "enabled", false) &&
+               haskey(custom_proc_vars, "P_0") &&
+               haskey(custom_proc_vars, "t_ads") &&
+               haskey(custom_proc_vars, "alpha") &&
+               haskey(custom_proc_vars, "beta") &&
+               haskey(custom_proc_vars, "P_l")
+
+                println("  Using custom process variables from config.yaml")
+                # Construct process_vars from custom_proc_vars
+                process_vars = [
+                    proc_vars_config["bed_length"],            # L [m]
+                    custom_proc_vars["P_0"],                   # P_0 [Pa]
+                    custom_proc_vars["P_0"] * custom_proc_vars["beta"] / 8.314 / 313.15, # n_dot_0 [mol/s]
+                    custom_proc_vars["t_ads"],                 # t_ads [s]
+                    custom_proc_vars["alpha"],                 # alpha [-]
+                    custom_proc_vars["beta"],                  # beta [-]
+                    proc_vars_config["intermediate_pressure"], # P_I [Pa]
+                    custom_proc_vars["P_l"]                    # P_l [Pa]
+                ]
+            else
+                println("  Using process variables from optimization scenario lookup.")
+                # Existing logic: Get optimization variables
+                optimization_scenario = proc_vars_config["optimization_scenario"] # Get from new location
+                opt_vars = get_opt_vars(material_name, optimization_scenario)
+
+                process_vars = [
+                    proc_vars_config["bed_length"],            # L [m]
+                    opt_vars[1],                                # P_0 [Pa]
+                    opt_vars[1] * opt_vars[4] / 8.314 / 313.15, # n_dot_0 [mol/s]
+                    opt_vars[2],                                # t_ads [s]
+                    opt_vars[3],                                # alpha [-]
+                    opt_vars[5],                                # beta [-]
+                    proc_vars_config["intermediate_pressure"],# P_I [Pa]
+                    opt_vars[6]                                 # P_l [Pa]
+                ]
+            end
 
             # --- 3. RUN THE SIMULATION ---
             println("🚀 Running simulation... (This may take a moment)")
