@@ -31,12 +31,6 @@ process_variables:
     # e.g., "MaxPurity90", "MaxPurity95", "MaxProductivity", "MinEnergy"
     optimization_scenario: "MaxPurity90" # This will be ignored if custom_process_variables is enabled
 
-# Configuration for fault injection.
-# We will build on this in the next steps.
-fault_injection:
-    enabled: false
-    type: None # e.g., Adsorbent_Degradation, Column_Leak, Stuck_Valve
-    parameters: {}
 
 # Optional: Custom process variables to override optimization lookup.
 # If enabled, these values will be used instead of looking up from tables.

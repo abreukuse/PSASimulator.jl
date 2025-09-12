@@ -125,7 +125,7 @@ function execute_simulation()
     config = YAML.load_file("config.yaml")
     sim_settings = config["simulation_settings"]
     proc_vars_config = config["process_variables"]
-    fault_settings = config["fault_injection"]
+    
     custom_proc_vars = get(config, "custom_process_variables", nothing)
 
     # Extract parameters from config
@@ -201,10 +201,7 @@ function execute_simulation()
                 end
             end
 
-            println("\n--- LEGACY FAULT INJECTION (from config.yaml) ---")
-            for (key, value) in fault_settings
-                println("  $(key): $(value)")
-            end
+            
             println("\n" * "="^60 * "\n")
 
             # --- 2. DETERMINE PROCESS VARIABLES TO USE ---
